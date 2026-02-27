@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 class ManageUserController extends Controller
@@ -25,7 +26,7 @@ class ManageUserController extends Controller
         $user = User::create([
             'name'=> $validated['name'],
             'email'=> $validated['email'],
-            'password'=> $validated['password'],
+            'password'=> Hash::make($validated['password']),
             'public_id'=> $uuid,
         ]);
         $user->assignRole($role);

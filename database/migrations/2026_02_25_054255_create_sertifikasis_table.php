@@ -13,6 +13,16 @@ return new class extends Migration
     {
         Schema::create('sertifikasis', function (Blueprint $table) {
             $table->id();
+            $table->uuid('public_id');
+            $table->string('title');
+            $table->string('sertificate_owner')->nullable();
+            $table->string('sertificate_code')->nullable();
+            $table->string('sertificate_image')->nullable();
+            $table->string('sertificate_file')->nullable();
+            $table->string('slug');
+            $table->foreignId('publisher_id')->constrained('users')->onDelete('cascade');
+            $table->string('tanggal');
+            $table->string('published_at');
             $table->timestamps();
         });
     }

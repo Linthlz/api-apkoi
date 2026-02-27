@@ -13,6 +13,15 @@ return new class extends Migration
     {
         Schema::create('kurikulums', function (Blueprint $table) {
             $table->id();
+            $table->uuid('public_id');
+            $table->string('title');
+            $table->string('tanggal');
+            $table->string('kurikulum_image')->nullable();
+            $table->string('kurikulum_file')->nullable();
+            // $table->string('content');
+            $table->string('slug');
+            $table->foreignId('publisher_id')->constrained('users')->onDelete('cascade');
+            $table->string('published_at');
             $table->timestamps();
         });
     }
