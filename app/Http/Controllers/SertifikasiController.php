@@ -13,40 +13,48 @@ class SertifikasiController extends Controller
 {
     use AuthorizesRequests;
 
-
     public function store(Request $request)
-{
-    $this->authorize('create sertifikasi');
+    {
+        $this->authorize('manage sertifikasi');
 
-    $validated = $request->validate([
-        'title'             => 'required|string|max:255',
-        'sertificate_owner' => 'nullable|string|max:255',
-        'sertificate_code'  => 'nullable|string|max:255',
-        'sertificate_image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
-        'sertificate_file'  => 'nullable|file|max:5120',
-        'tanggal'           => 'required|string',
-    ]);
+        $request->validate([
+            'title' => 'required|string',
+            'sertificate_owner' => 'required|string',
+            'sertificate_code' => 'required|string',
+            'tanggal' => 'required|string',
+            'sertificate_image' => 'required|image|mimes:jpg,jpeg,png|max:2048',
+            'sertificate_file' => 'required|mimes:pdf|max:4096',
+            'published_at' => 'required|date'
+        ]);
 
-    if ($request->hasFile('sertificate_image')) {
-        $validated['sertificate_image'] =
-            $request->file('sertificate_image')->store('sertifikasi', 'public');
+        $uuid = Str::uuid()->toString();
+        $slug = Str::slug($request->title);
+
+        // upload image
+        $image = $request->file('sertificate_image');
+        $image->storeAs('sertifikasi/images', $image->hashName(), 'public');
+
+        // upload file
+        $file = $request->file('sertificate_file');
+        $file->storeAs('sertifikasi/files', $file->hashName(), 'public');
+
+        $sertifikasi = Sertifikasi::create([
+            'public_id' => $uuid,
+            'title' => $request->title,
+            'sertificate_owner' => $request->sertificate_owner,
+            'sertificate_code' => $request->sertificate_code,
+            'sertificate_image' => $image->hashName(),
+            'sertificate_file' => $file->hashName(),
+            'slug' => $slug,
+            'publisher_id' => Auth::user()->id,
+            'tanggal' => $request->tanggal,
+            'published_at' => $request->published_at,
+        ]);
+
+        return response()->json([
+            'message' => 'Sertifikasi berhasil dibuat!',
+            'data' => $sertifikasi
+        ], 201);
     }
 
-    if ($request->hasFile('sertificate_file')) {
-        $validated['sertificate_file'] =
-            $request->file('sertificate_file')->store('sertifikasi', 'public');
-    }
-
-    $validated['public_id']    = Str::uuid();
-    $validated['slug']         = Str::slug($validated['title']);
-    $validated['publisher_id'] = Auth::id();
-    $validated['published_at'] = now();
-
-    $sertifikasi = Sertifikasi::create($validated);
-
-    return response()->json([
-        'message' => 'Sertifikasi created successfully',
-        'data'    => $sertifikasi
-    ], 201);
-}
 }

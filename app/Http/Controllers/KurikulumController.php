@@ -12,37 +12,44 @@ use Illuminate\Support\Str;
 class KurikulumController extends Controller
 {
     use AuthorizesRequests;
+
     public function store(Request $request)
-{
-    $this->authorize('create kurikulum');
+    {
+        $this->authorize('manage kurikulum');
 
-    $validated = $request->validate([
-        'title'           => 'required|string|max:255',
-        'tanggal'         => 'required|string',
-        'kurikulum_image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
-        'kurikulum_file'  => 'nullable|file|max:5120',
-    ]);
+        $request->validate([
+            'title' => 'required|string',
+            'tanggal' => 'required|string',
+            'kurikulum_image' => 'required|image|mimes:jpg,jpeg,png|max:2048',
+            'kurikulum_file' => 'required|mimes:pdf,doc,docx|max:4096',
+            'published_at' => 'required|date'
+        ]);
 
-    if ($request->hasFile('kurikulum_image')) {
-        $validated['kurikulum_image'] =
-            $request->file('kurikulum_image')->store('kurikulum', 'public');
+        $uuid = Str::uuid()->toString();
+        $slug = Str::slug($request->title);
+
+        // upload image
+        $image = $request->file('kurikulum_image');
+        $image->storeAs('kurikulum/images', $image->hashName(), 'public');
+
+        // upload file
+        $file = $request->file('kurikulum_file');
+        $file->storeAs('kurikulum/files', $file->hashName(), 'public');
+
+        $kurikulum = Kurikulum::create([
+            'public_id' => $uuid,
+            'title' => $request->title,
+            'tanggal' => $request->tanggal,
+            'kurikulum_image' => $image->hashName(),
+            'kurikulum_file' => $file->hashName(),
+            'slug' => $slug,
+            'publisher_id' => Auth::user()->id,
+            'published_at' => $request->published_at,
+        ]);
+
+        return response()->json([
+            'message' => 'Kurikulum berhasil dibuat!',
+            'data' => $kurikulum
+        ], 201);
     }
-
-    if ($request->hasFile('kurikulum_file')) {
-        $validated['kurikulum_file'] =
-            $request->file('kurikulum_file')->store('kurikulum', 'public');
-    }
-
-    $validated['public_id']    = Str::uuid();
-    $validated['slug']         = Str::slug($validated['title']);
-    $validated['publisher_id'] = Auth::id();
-    $validated['published_at'] = now();
-
-    $kurikulum = Kurikulum::create($validated);
-
-    return response()->json([
-        'message' => 'Kurikulum created successfully',
-        'data'    => $kurikulum
-    ], 201);
-}
 }

@@ -26,32 +26,39 @@ class NewsController extends Controller
             // 'manage jurnal',
 
     use AuthorizesRequests;
-   public function store(Request $request)
-{
-    $this->authorize('manage news');
+    public function store(Request $request)
+    {
+        $this->authorize('manage news');
 
-    $validated = $request->validate([
-        'title'      => 'required|string|max:255',
-        'tanggal'    => 'required|string',
-        'content'    => 'required|string',
-        'news_image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
-    ]);
+        $request->validate([
+            'title' => 'required|string',
+            'tanggal' => 'required|string',
+            'content' => 'required|string',
+            'news_image' => 'required|image|mimes:jpg,jpeg,png|max:2048',
+            'published_at' => 'required|date'
+        ]);
 
-    if ($request->hasFile('news_image')) {
-        $validated['news_image'] =
-            $request->file('news_image')->store('news', 'public');
+        $uuid = Str::uuid()->toString();
+        $slug = Str::slug($request->title);
+
+        // upload image
+        $image = $request->file('news_image');
+        $image->storeAs('news', $image->hashName(), 'public');
+
+        $news = News::create([
+            'public_id' => $uuid,
+            'title' => $request->title,
+            'tanggal' => $request->tanggal,
+            'news_image' => $image->hashName(),
+            'content' => $request->content,
+            'slug' => $slug,
+            'publisher_id' => Auth::user()->id,
+            'published_at' => $request->published_at,
+        ]);
+
+        return response()->json([
+            'message' => 'News berhasil dibuat!',
+            'data' => $news
+        ], 201);
     }
-
-    $validated['public_id']    = Str::uuid();
-    $validated['slug']         = Str::slug($validated['title']);
-    $validated['publisher_id'] = Auth::id();
-    $validated['published_at'] = now();
-
-    $news = News::create($validated);
-
-    return response()->json([
-        'message' => 'News created successfully',
-        'data'    => $news
-    ], 201);
-}
 }
