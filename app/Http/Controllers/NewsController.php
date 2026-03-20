@@ -63,5 +63,13 @@ class NewsController extends Controller
             'message' => 'News berhasil dibuat!',
             'data' => $news
         ], 201);
+        // Error Catch
+        try{    
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Terjadi kesalahan',
+                'error' => $e->getMessage()
+            ], 500);
+            }
     }
 }

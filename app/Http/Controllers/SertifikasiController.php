@@ -14,7 +14,7 @@ class SertifikasiController extends Controller
 {
     use AuthorizesRequests;
 
-      public function store(Request $request)
+    public function store(Request $request)
     {
         $this->authorize('manage sertifikasi');
 
@@ -23,8 +23,8 @@ class SertifikasiController extends Controller
             'sertificate_owner' => 'required|string',
             'sertificate_code' => 'required|string',
             'tanggal' => 'required|string',
-            'sertificate_image' => 'required|image|mimes:jpg,jpeg,png|max:2048',
-            'sertificate_file' => 'required|mimes:pdf|max:4096',
+            'certificate_image' => 'required|image|mimes:jpg,jpeg,png|max:2048',
+            'certificate_file' => 'required|mimes:pdf|max:4096',
             'published_at' => 'required|date'
         ]);
         if($validator->fails()){
@@ -35,8 +35,8 @@ class SertifikasiController extends Controller
         $slug = Str::slug($request->title). '-'. time();
 
         // upload image
-        $imagePath = $request->file('sertificate_image')->store('sertifikasi/images', 'public');
-        $filePath = $request->file('sertificate_file')->store('sertifikasi/files', 'public');
+        $imagePath = $request->file('certificate_image')->store('sertifikasi/images', 'public');
+        $filePath = $request->file('certificate_file')->store('sertifikasi/files', 'public');
 
         $sertifikasi = Sertifikasi::create([
              'public_id' => $uuid,
@@ -52,7 +52,7 @@ class SertifikasiController extends Controller
         ]);
 
         return response()->json([
-            'message' => 'Kurikulum berhasil dibuat!',
+            'message' => 'Certificate berhasil dibuat!',
             'data' => $sertifikasi
         ], 201);
     }

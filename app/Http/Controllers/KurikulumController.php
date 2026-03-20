@@ -33,7 +33,8 @@ class KurikulumController extends Controller
         $slug = Str::slug($request->title). '-'. time();
 
         // upload image
-        $imagePath = $request->file('kurikulum_images')->store('kurikulum/images', 'public');
+        $imagePath = $request->file('kurikulum_image')->store('kurikulum/images', 'public');
+        // $imagePath = $request->file('kurikulum_image')->store('kurikulum/images', 'public');
         $filePath = $request->file('kurikulum_file')->store('kurikulum/files', 'public');
 
         $kurikulum = Kurikulum::create([
@@ -51,5 +52,13 @@ class KurikulumController extends Controller
             'message' => 'Kurikulum berhasil dibuat!',
             'data' => $kurikulum
         ], 201);
+        try {
+        // error catching
+        } catch (\Exception $e) {
+        return response()->json([
+            'message' => 'Terjadi kesalahan',
+            'error' => $e->getMessage()
+        ], 500);
+        }
     }
 }
