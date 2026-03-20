@@ -7,18 +7,19 @@ use App\Models\Sertifikasi;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 
 class SertifikasiController extends Controller
 {
     use AuthorizesRequests;
 
-    public function store(Request $request)
+      public function store(Request $request)
     {
         $this->authorize('manage sertifikasi');
 
-        $request->validate([
-            'title' => 'required|string',
+        $validator =Validator::make($request->all(),[
+           'title' => 'required|string',
             'sertificate_owner' => 'required|string',
             'sertificate_code' => 'required|string',
             'tanggal' => 'required|string',
@@ -26,25 +27,24 @@ class SertifikasiController extends Controller
             'sertificate_file' => 'required|mimes:pdf|max:4096',
             'published_at' => 'required|date'
         ]);
-
+        if($validator->fails()){
+            return response()->json($validator->errors(),422);
+        }
+        //Public ID And Slug
         $uuid = Str::uuid()->toString();
-        $slug = Str::slug($request->title);
+        $slug = Str::slug($request->title). '-'. time();
 
         // upload image
-        $image = $request->file('sertificate_image');
-        $image->storeAs('sertifikasi/images', $image->hashName(), 'public');
-
-        // upload file
-        $file = $request->file('sertificate_file');
-        $file->storeAs('sertifikasi/files', $file->hashName(), 'public');
+        $imagePath = $request->file('sertificate_image')->store('sertifikasi/images', 'public');
+        $filePath = $request->file('sertificate_file')->store('sertifikasi/files', 'public');
 
         $sertifikasi = Sertifikasi::create([
-            'public_id' => $uuid,
+             'public_id' => $uuid,
             'title' => $request->title,
             'sertificate_owner' => $request->sertificate_owner,
             'sertificate_code' => $request->sertificate_code,
-            'sertificate_image' => $image->hashName(),
-            'sertificate_file' => $file->hashName(),
+            'sertificate_image' => basename($imagePath),
+            'sertificate_file' => basename($filePath),
             'slug' => $slug,
             'publisher_id' => Auth::user()->id,
             'tanggal' => $request->tanggal,
@@ -52,9 +52,8 @@ class SertifikasiController extends Controller
         ]);
 
         return response()->json([
-            'message' => 'Sertifikasi berhasil dibuat!',
+            'message' => 'Kurikulum berhasil dibuat!',
             'data' => $sertifikasi
         ], 201);
     }
-
 }
