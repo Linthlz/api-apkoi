@@ -23,7 +23,7 @@ class KurikulumController extends Controller
             'tanggal' => 'required|string',
             'kurikulum_image' => 'required|image|mimes:jpg,jpeg,png|max:2048',
             'kurikulum_file' => 'required|mimes:pdf,doc,docx|max:4096',
-            'published_at' => 'required|date'
+            // 'published_at' => 'required|date'
         ]);
         if($validator->fails()){
             return response()->json($validator->errors(),422);
@@ -45,7 +45,7 @@ class KurikulumController extends Controller
             'kurikulum_file' => basename($filePath),
             'slug' => $slug,
             'publisher_id' => Auth::user()->id,
-            'published_at' => $request->published_at,
+            'published_at' => now(),
         ]);
 
         return response()->json([
@@ -60,5 +60,24 @@ class KurikulumController extends Controller
             'error' => $e->getMessage()
         ], 500);
         }
+    }
+
+     public function index(){
+        $this->authorize('manage kurikulum');
+         $data = Kurikulum::whereNotNull('published_at')
+        ->where('published_at', '<=', now())
+        ->latest()
+        ->paginate(5);
+
+        return response()->json([
+            'message' => 'News',
+            'data' => $data->items(),
+            'pagination' => [
+                'current_page' => $data->currentPage(),
+                'last_page' => $data->lastPage(),
+                'per_page' => $data->perPage(),
+                'total' => $data->total(),
+            ]
+        ], 200);
     }
 }
