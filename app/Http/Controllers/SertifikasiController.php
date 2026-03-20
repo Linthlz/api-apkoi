@@ -19,7 +19,7 @@ class SertifikasiController extends Controller
         $this->authorize('manage sertifikasi');
 
         $validator =Validator::make($request->all(),[
-           'title' => 'required|string',
+            'title' => 'required|string|unique:sertifikasis,title',
             'sertificate_owner' => 'required|string',
             'sertificate_code' => 'required|string',
             'tanggal' => 'required|string',
@@ -32,14 +32,14 @@ class SertifikasiController extends Controller
         }
         //Public ID And Slug
         $uuid = Str::uuid()->toString();
-        $slug = Str::slug($request->title). '-'. time();
+        $slug = Str::slug($request->title);
 
         // upload image
         $imagePath = $request->file('certificate_image')->store('sertifikasi/images', 'public');
         $filePath = $request->file('certificate_file')->store('sertifikasi/files', 'public');
 
         $sertifikasi = Sertifikasi::create([
-             'public_id' => $uuid,
+            'public_id' => $uuid,
             'title' => $request->title,
             'sertificate_owner' => $request->sertificate_owner,
             'sertificate_code' => $request->sertificate_code,
@@ -80,6 +80,18 @@ class SertifikasiController extends Controller
                 'per_page' => $data->perPage(),
                 'total' => $data->total(),
             ]
+        ], 200);
+    }
+    public function show($slug)
+    {
+        $data = Sertifikasi::where('slug', $slug)
+            ->whereNotNull('published_at')
+            ->where('published_at', '<=', now())
+            ->firstOrFail();
+
+        return response()->json([
+            'message' => 'Certificate Fetched',
+            'data' => $data
         ], 200);
     }
 }

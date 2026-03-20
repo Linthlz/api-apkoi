@@ -32,7 +32,7 @@ class NewsController extends Controller
         $this->authorize('manage news');
 
         $validator =Validator::make($request->all(),[
-            'title' => 'required|string',
+            'title' => 'required|string|unique:news,title',
             'tanggal' => 'required|string',
             'content' => 'required|string',
             'news_image' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
@@ -42,8 +42,9 @@ class NewsController extends Controller
             return response()->json($validator->errors(),422);
         }
         //Public ID And Slug
+        try{    
         $uuid = Str::uuid()->toString();
-        $slug = Str::slug($request->title). '-'. time();
+        $slug = Str::slug($request->title);
 
         // upload image
         $imagePath = $request->file('news_image')->store('news', 'public');
@@ -64,7 +65,6 @@ class NewsController extends Controller
             'data' => $news
         ], 201);
         // Error Catch
-        try{    
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Terjadi kesalahan',
@@ -90,6 +90,18 @@ class NewsController extends Controller
                 'per_page' => $data->perPage(),
                 'total' => $data->total(),
             ]
+        ], 200);
+    }
+    public function show($slug)
+    {
+        $data = News::where('slug', $slug)
+            ->whereNotNull('published_at')
+            ->where('published_at', '<=', now())
+            ->firstOrFail();
+
+        return response()->json([
+            'message' => 'News Fetched',
+            'data' => $data
         ], 200);
     }
 }

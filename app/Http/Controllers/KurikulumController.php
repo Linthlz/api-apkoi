@@ -19,7 +19,7 @@ class KurikulumController extends Controller
          $this->authorize('manage kurikulum');
 
         $validator =Validator::make($request->all(),[
-            'title' => 'required|string',
+            'title' => 'required|string|unique:kurikulums,title',
             'tanggal' => 'required|string',
             'kurikulum_image' => 'required|image|mimes:jpg,jpeg,png|max:2048',
             'kurikulum_file' => 'required|mimes:pdf,doc,docx|max:4096',
@@ -28,9 +28,10 @@ class KurikulumController extends Controller
         if($validator->fails()){
             return response()->json($validator->errors(),422);
         }
+        try {
         //Public ID And Slug
         $uuid = Str::uuid()->toString();
-        $slug = Str::slug($request->title). '-'. time();
+        $slug = Str::slug($request->title);
 
         // upload image
         $imagePath = $request->file('kurikulum_image')->store('kurikulum/images', 'public');
@@ -52,7 +53,6 @@ class KurikulumController extends Controller
             'message' => 'Kurikulum berhasil dibuat!',
             'data' => $kurikulum
         ], 201);
-        try {
         // error catching
         } catch (\Exception $e) {
         return response()->json([
@@ -63,14 +63,13 @@ class KurikulumController extends Controller
     }
 
      public function index(){
-        $this->authorize('manage kurikulum');
          $data = Kurikulum::whereNotNull('published_at')
         ->where('published_at', '<=', now())
         ->latest()
         ->paginate(5);
 
         return response()->json([
-            'message' => 'News',
+            'message' => 'Kurikulum',
             'data' => $data->items(),
             'pagination' => [
                 'current_page' => $data->currentPage(),
@@ -78,6 +77,21 @@ class KurikulumController extends Controller
                 'per_page' => $data->perPage(),
                 'total' => $data->total(),
             ]
+        ], 200);
+    }
+    public function show($slug)
+    {
+        $data = Kurikulum::where('slug', $slug)
+            ->whereNotNull('published_at')
+            ->where('published_at', '<=', now())
+            ->firstOrFail();
+
+            $data->kurikulum_image_url = asset('storage/kurikulum/images/' . $data->kurikulum_image);
+            $data->kurikulum_file_url = asset('storage/kurikulum/files/' . $data->kurikulum_file);
+
+        return response()->json([
+            'message' => 'Kurikulum Fetched',
+            'data' => $data
         ], 200);
     }
 }
