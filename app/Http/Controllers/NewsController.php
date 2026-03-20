@@ -6,8 +6,10 @@ use App\Models\News;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 
 class NewsController extends Controller
 {
@@ -103,5 +105,75 @@ class NewsController extends Controller
             'message' => 'News Fetched',
             'data' => $data
         ], 200);
+    }
+    public function update(Request $request, $slug)
+    {
+        $this->authorize('manage news');
+        $data = News::where('slug', $slug)->firstOrFail();
+
+        $validator = Validator::make($request->all(), [
+            'title' => 'required|string|unique:news,title,' . $data->id,
+            'tanggal' => 'required|date',
+            'content' => 'required|string',
+            'news_image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json($validator->errors(), 422);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            if ($request->title !== $data->title) {
+                $data->slug = Str::slug($request->title);
+            }
+
+            $data->title = $request->title;
+            $data->tanggal = $request->tanggal;
+            $data->content = $request->content;
+
+            if ($request->hasFile('news_image')) {
+                Storage::disk('public')->delete('news/' . $data->news_image);
+                $imagePath = $request->file('news_image')->store('news', 'public');
+                $data->news_image = basename($imagePath);
+            }
+
+            $data->save();
+            DB::commit();
+
+            return response()->json([
+                'message' => 'News Updated',
+                'data' => $data
+            ], 200);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'message' => 'Error',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+    public function destroy($slug)
+    {
+        $this->authorize('manage news');
+        $data = News::where('slug', $slug)->firstOrFail();
+        try {
+            DB::beginTransaction();
+            Storage::disk('public')->delete('news/' . $data->news_image);
+            $data->delete();
+            DB::commit();
+            return response()->json([
+                'message' => 'News Deleted'
+            ], 200);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => 'Error',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 }

@@ -7,6 +7,8 @@ use App\Models\Kurikulum;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 
@@ -93,5 +95,74 @@ class KurikulumController extends Controller
             'message' => 'Kurikulum Fetched',
             'data' => $data
         ], 200);
+    }
+    //Note, Use slug not id
+    public function update(Request $request, $slug)
+    {
+        $data = Kurikulum::where('slug', $slug)->firstOrFail();
+
+        $validator = Validator::make($request->all(), [
+            'title' => 'required|string|unique:kurikulums,title,' . $data->id,
+            'tanggal' => 'required|date',
+            'kurikulum_image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'kurikulum_file' => 'nullable|mimes:pdf,doc,docx|max:4096',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json($validator->errors(), 422);
+        }
+
+        try {
+            DB::beginTransaction();
+            if ($request->title !== $data->title) {
+                $data->slug = Str::slug($request->title);
+            }
+            $data->title = $request->title;
+            $data->tanggal = $request->tanggal;
+            if ($request->hasFile('kurikulum_image')) {
+                Storage::disk('public')->delete('kurikulum/images/' . $data->kurikulum_image);
+                $imagePath = $request->file('kurikulum_image')->store('kurikulum/images', 'public');
+                $data->kurikulum_image = basename($imagePath);
+            }
+            if ($request->hasFile('kurikulum_file')) {
+                Storage::disk('public')->delete('kurikulum/files/' . $data->kurikulum_file);
+                $filePath = $request->file('kurikulum_file')->store('kurikulum/files', 'public');
+                $data->kurikulum_file = basename($filePath);
+            }
+            $data->save();
+            DB::commit();
+            return response()->json([
+                'message' => 'Kurikulum updated'
+            ], 200);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'message' => 'Error',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function destroy($slug)
+    {
+        $data = Kurikulum::where('slug', $slug)->firstOrFail();
+        try {
+            DB::beginTransaction();
+            Storage::disk('public')->delete('kurikulum/images/' . $data->kurikulum_image);
+            Storage::disk('public')->delete('kurikulum/files/' . $data->kurikulum_file);
+            $data->delete();
+            DB::commit();
+            return response()->json([
+                'message' => 'Kurikulum berhasil dihapus!'
+            ], 200);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => 'Terjadi kesalahan',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 }

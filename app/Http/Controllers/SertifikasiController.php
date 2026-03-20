@@ -7,6 +7,8 @@ use App\Models\Sertifikasi;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 
@@ -93,5 +95,91 @@ class SertifikasiController extends Controller
             'message' => 'Certificate Fetched',
             'data' => $data
         ], 200);
+    }
+    public function update(Request $request, $slug)
+    {
+        $this->authorize('manage sertifikasi');
+        $data = Sertifikasi::where('slug', $slug)->firstOrFail();
+
+        $validator = Validator::make($request->all(), [
+            'title' => 'required|string|unique:sertifikasis,title,' . $data->id,
+            'sertificate_owner' => 'required|string',
+            'sertificate_code' => 'required|string',
+            'tanggal' => 'required|date',
+            'sertificate_image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'sertificate_file' => 'nullable|mimes:pdf|max:4096',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json($validator->errors(), 422);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            if ($request->title !== $data->title) {
+                $data->slug = Str::slug($request->title);
+            }
+
+            $data->title = $request->title;
+            $data->sertificate_owner = $request->sertificate_owner;
+            $data->sertificate_code = $request->sertificate_code;
+            $data->tanggal = $request->tanggal;
+
+            if ($request->hasFile('sertificate_image')) {
+                Storage::disk('public')->delete('sertifikasi/images/' . $data->sertificate_image);
+                $imagePath = $request->file('sertificate_image')->store('sertifikasi/images', 'public');
+                $data->sertificate_image = basename($imagePath);
+            }
+
+            if ($request->hasFile('sertificate_file')) {
+                Storage::disk('public')->delete('sertifikasi/files/' . $data->sertificate_file);
+                $filePath = $request->file('sertificate_file')->store('sertifikasi/files', 'public');
+                $data->sertificate_file = basename($filePath);
+            }
+
+            $data->save();
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Certificate Updated',
+                'data' => $data
+            ], 200);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'message' => 'Error',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function destroy($slug)
+    {
+        $this->authorize('manage sertifikasi');
+        $data = Sertifikasi::where('slug', $slug)->firstOrFail();
+        try {
+            DB::beginTransaction();
+
+            Storage::disk('public')->delete('sertifikasi/images/' . $data->sertificate_image);
+            Storage::disk('public')->delete('sertifikasi/files/' . $data->sertificate_file);
+
+            $data->delete();
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Certificate Deleted'
+            ], 200);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'message' => 'Error',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 }
