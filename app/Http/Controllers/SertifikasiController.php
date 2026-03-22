@@ -67,7 +67,7 @@ class SertifikasiController extends Controller
         }
     }
     public function index(){
-        $this->authorize('manage sertifikasi');
+        // $this->authorize('manage sertifikasi');
          $data = Sertifikasi::whereNotNull('published_at')
         ->where('published_at', '<=', now())
         ->latest()
@@ -90,7 +90,8 @@ class SertifikasiController extends Controller
             ->whereNotNull('published_at')
             ->where('published_at', '<=', now())
             ->firstOrFail();
-
+            $data->sertificate_image_url = asset('storage/sertifikasi/images/' . $data->sertificate_image);
+            $data->sertificate_file_url = asset('storage/sertifikasi/files/' . $data->sertificate_file);
         return response()->json([
             'message' => 'Certificate Fetched',
             'data' => $data

@@ -101,7 +101,7 @@ class NewsController extends Controller
             ->whereNotNull('published_at')
             ->where('published_at', '<=', now())
             ->firstOrFail();
-
+            $data->news_image_url = asset('storage/news/' . $data->news_image);
         return response()->json([
             'message' => 'News Fetched',
             'data' => $data
