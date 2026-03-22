@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('sertifikasis', function (Blueprint $table) {
             $table->id();
             $table->uuid('public_id');
-            $table->string('title');
+            $table->string('title')->unique();
             $table->string('sertificate_owner')->nullable();
             $table->string('sertificate_code')->nullable();
             $table->string('sertificate_image')->nullable();
@@ -22,7 +22,7 @@ return new class extends Migration
             $table->string('slug');
             $table->foreignId('publisher_id')->constrained('users')->onDelete('cascade');
             $table->string('tanggal');
-            $table->string('published_at');
+            $table->timestamp('published_at')->nullable();
             $table->timestamps();
         });
     }

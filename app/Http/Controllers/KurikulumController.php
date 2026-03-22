@@ -23,7 +23,7 @@ class KurikulumController extends Controller
         $validator =Validator::make($request->all(),[
             'title' => 'required|string|unique:kurikulums,title',
             'tanggal' => 'required|string',
-            'kurikulum_image' => 'required|image|mimes:jpg,jpeg,png|max:2048',
+            // 'kurikulum_image' => 'required|image|mimes:jpg,jpeg,png|max:2048',
             'kurikulum_file' => 'required|mimes:pdf,doc,docx|max:4096',
             // 'published_at' => 'required|date'
         ]);
@@ -36,7 +36,7 @@ class KurikulumController extends Controller
         $slug = Str::slug($request->title);
 
         // upload image
-        $imagePath = $request->file('kurikulum_image')->store('kurikulum/images', 'public');
+        // $imagePath = $request->file('kurikulum_image')->store('kurikulum/images', 'public');
         // $imagePath = $request->file('kurikulum_image')->store('kurikulum/images', 'public');
         $filePath = $request->file('kurikulum_file')->store('kurikulum/files', 'public');
 
@@ -44,7 +44,7 @@ class KurikulumController extends Controller
             'public_id' => $uuid,
             'title' => $request->title,
             'tanggal' => $request->tanggal,
-            'kurikulum_image' => basename($imagePath),
+            // 'kurikulum_image' => basename($imagePath),
             'kurikulum_file' => basename($filePath),
             'slug' => $slug,
             'publisher_id' => Auth::user()->id,
@@ -99,19 +99,17 @@ class KurikulumController extends Controller
     //Note, Use slug not id
     public function update(Request $request, $slug)
     {
+        $this->authorize('manage kurikulum');
         $data = Kurikulum::where('slug', $slug)->firstOrFail();
-
         $validator = Validator::make($request->all(), [
             'title' => 'required|string|unique:kurikulums,title,' . $data->id,
             'tanggal' => 'required|date',
             'kurikulum_image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
             'kurikulum_file' => 'nullable|mimes:pdf,doc,docx|max:4096',
         ]);
-
         if ($validator->fails()) {
             return response()->json($validator->errors(), 422);
         }
-
         try {
             DB::beginTransaction();
             if ($request->title !== $data->title) {
@@ -134,10 +132,8 @@ class KurikulumController extends Controller
             return response()->json([
                 'message' => 'Kurikulum updated'
             ], 200);
-
         } catch (\Exception $e) {
             DB::rollBack();
-
             return response()->json([
                 'message' => 'Error',
                 'error' => $e->getMessage()
@@ -147,6 +143,7 @@ class KurikulumController extends Controller
 
     public function destroy($slug)
     {
+        $this->authorize('manage kurikulum');
         $data = Kurikulum::where('slug', $slug)->firstOrFail();
         try {
             DB::beginTransaction();

@@ -35,6 +35,7 @@ class NewsController extends Controller
 
         $validator =Validator::make($request->all(),[
             'title' => 'required|string|unique:news,title',
+            'category' => 'required|string',
             'tanggal' => 'required|string',
             'content' => 'required|string',
             'news_image' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
@@ -54,6 +55,7 @@ class NewsController extends Controller
         $news = News::create([
             'public_id' => $uuid,
             'title' => $request->title,
+            'category' => $request->category,
             'tanggal' => $request->tanggal,
             'news_image' => basename($imagePath),
             'content' => $request->content,
@@ -77,7 +79,6 @@ class NewsController extends Controller
 
 
     public function index(){
-        $this->authorize('manage news');
          $data = News::whereNotNull('published_at')
         ->where('published_at', '<=', now())
         ->latest()

@@ -12,6 +12,11 @@ Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
 
+Route::get('/', function(){
+   echo("api is running...");
+});
+
+
 //Auth
 Route::middleware('throttle:5,1')
    ->post('login', [AuthController::class, 'login']);
@@ -24,16 +29,28 @@ Route::middleware(['auth:sanctum', 'permission:manage users'])
    //News
 Route::middleware(['auth:sanctum', 'permission:manage news'])
    ->post('/create-news', [NewsController::class, 'store']);
+Route::middleware(['auth:sanctum', 'permission:manage news'])
+   ->patch('/update-news', [NewsController::class, 'update']);
+Route::middleware(['auth:sanctum', 'permission:manage news'])
+   ->delete('/delete-news', [NewsController::class, 'destroy']);
 Route::get('/news',[NewsController::class,'index']);
-Route::get('/news/{$slug}',[NewsController::class, 'show']);
+Route::get('/news/{slug}',[NewsController::class, 'show']);
    //Sertifikasi
-Route::middleware(['auth:sanctum', 'permission:manage sertifikasi'])
+Route::middleware(['auth:sanctum', 'permission:manage certificate'])
    ->post('/create-sertifikasi', [SertifikasiController::class, 'store']);
+Route::middleware(['auth:sanctum', 'permission:manage certificate'])
+   ->patch('/create-sertifikasi', [SertifikasiController::class, 'update']);
+Route::middleware(['auth:sanctum', 'permission:manage certificate'])
+   ->delete('/create-sertifikasi', [SertifikasiController::class, 'destroy']);
 Route::get('/sertifikasi',[SertifikasiController::class,'index']);
-Route::get('/sertifikasi/{$slug}',[SertifikasiController::class, 'show']);
+Route::get('/sertifikasi/{slug}',[SertifikasiController::class, 'show']);
 
    //Kurikulum
 Route::middleware(['auth:sanctum', 'permission:manage kurikulum'])
    ->post('/create-kurikulum', [KurikulumController::class, 'store']);
+Route::middleware(['auth:sanctum', 'permission:manage kurikulum'])
+   ->patch('/update-kurikulum/{slug}', [KurikulumController::class, 'update']);
+Route::middleware(['auth:sanctum', 'permission:manage kurikulum'])
+   ->delete('/delete-kurikulum/{slug}', [KurikulumController::class, 'destroy']);
 Route::get('/kurikulum',[KurikulumController::class,'index']);
-Route::get('/kurikulum/{$slug}',[KurikulumController::class, 'show']);   
+Route::get('/kurikulum/{slug}',[KurikulumController::class, 'show']);   

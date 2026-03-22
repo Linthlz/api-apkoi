@@ -15,6 +15,7 @@ class news extends Model
     'slug',
     'publisher_id',
     'published_at',
+    'category'
 ];
 public function publisher()
 {

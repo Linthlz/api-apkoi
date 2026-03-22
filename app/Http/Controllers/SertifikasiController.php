@@ -18,34 +18,35 @@ class SertifikasiController extends Controller
 
     public function store(Request $request)
     {
-        $this->authorize('manage sertifikasi');
+        $this->authorize('manage certificate');
 
         $validator =Validator::make($request->all(),[
             'title' => 'required|string|unique:sertifikasis,title',
             'sertificate_owner' => 'required|string',
             'sertificate_code' => 'required|string',
             'tanggal' => 'required|string',
-            'certificate_image' => 'required|image|mimes:jpg,jpeg,png|max:2048',
-            'certificate_file' => 'required|mimes:pdf|max:4096',
+            // 'sertificate_image' => 'required|image|mimes:jpg,jpeg,png|max:2048',
+            'sertificate_file' => 'required|mimes:pdf|max:4096',
             // 'published_at' => 'required|date'
         ]);
         if($validator->fails()){
             return response()->json($validator->errors(),422);
         }
         //Public ID And Slug
+        try {
         $uuid = Str::uuid()->toString();
         $slug = Str::slug($request->title);
 
         // upload image
-        $imagePath = $request->file('certificate_image')->store('sertifikasi/images', 'public');
-        $filePath = $request->file('certificate_file')->store('sertifikasi/files', 'public');
+        // $imagePath = $request->file('certificate_image')->store('sertifikasi/images', 'public');
+        $filePath = $request->file('sertificate_file')->store('sertifikasi/files', 'public');
 
         $sertifikasi = Sertifikasi::create([
             'public_id' => $uuid,
             'title' => $request->title,
             'sertificate_owner' => $request->sertificate_owner,
             'sertificate_code' => $request->sertificate_code,
-            'sertificate_image' => basename($imagePath),
+            // 'sertificate_image' => basename($imagePath),
             'sertificate_file' => basename($filePath),
             'slug' => $slug,
             'publisher_id' => Auth::user()->id,
@@ -57,7 +58,6 @@ class SertifikasiController extends Controller
             'message' => 'Certificate berhasil dibuat!',
             'data' => $sertifikasi
         ], 201);
-        try {
         // Error Catch
         } catch (\Exception $e) {
         return response()->json([
@@ -100,52 +100,42 @@ class SertifikasiController extends Controller
     {
         $this->authorize('manage sertifikasi');
         $data = Sertifikasi::where('slug', $slug)->firstOrFail();
-
         $validator = Validator::make($request->all(), [
             'title' => 'required|string|unique:sertifikasis,title,' . $data->id,
             'sertificate_owner' => 'required|string',
             'sertificate_code' => 'required|string',
             'tanggal' => 'required|date',
-            'sertificate_image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
-            'sertificate_file' => 'nullable|mimes:pdf|max:4096',
+            'certificate_image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'certificate_file' => 'nullable|mimes:pdf|max:4096',
         ]);
-
         if ($validator->fails()) {
             return response()->json($validator->errors(), 422);
         }
-
         try {
             DB::beginTransaction();
-
             if ($request->title !== $data->title) {
                 $data->slug = Str::slug($request->title);
             }
-
             $data->title = $request->title;
             $data->sertificate_owner = $request->sertificate_owner;
             $data->sertificate_code = $request->sertificate_code;
             $data->tanggal = $request->tanggal;
-
-            if ($request->hasFile('sertificate_image')) {
+            if ($request->hasFile('certificate_image')) {
                 Storage::disk('public')->delete('sertifikasi/images/' . $data->sertificate_image);
-                $imagePath = $request->file('sertificate_image')->store('sertifikasi/images', 'public');
+                $imagePath = $request->file('certificate_image')->store('sertifikasi/images', 'public');
                 $data->sertificate_image = basename($imagePath);
             }
-
-            if ($request->hasFile('sertificate_file')) {
+            if ($request->hasFile('certificate_file')) {
                 Storage::disk('public')->delete('sertifikasi/files/' . $data->sertificate_file);
-                $filePath = $request->file('sertificate_file')->store('sertifikasi/files', 'public');
+                $filePath = $request->file('certificate_file')->store('sertifikasi/files', 'public');
                 $data->sertificate_file = basename($filePath);
             }
-
             $data->save();
             DB::commit();
-
             return response()->json([
                 'message' => 'Certificate Updated',
                 'data' => $data
             ], 200);
-
         } catch (\Exception $e) {
             DB::rollBack();
 
