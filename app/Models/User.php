@@ -27,20 +27,21 @@ class User extends Authenticatable
         'role',
         'profile_avatar'
     ];
-    public function news()
-{
-    return $this->hasMany(news::class, 'publisher_id');
-}
+    public function news(){
+        return $this->hasMany(news::class, 'publisher_id');
+    }
 
-public function kurikulums()
-{
-    return $this->hasMany(kurikulum::class, 'publisher_id');
-}
+    public function kurikulums(){
+        return $this->hasMany(kurikulum::class, 'publisher_id');
+    }
 
-public function sertifikasis()
-{
-    return $this->hasMany(sertifikasi::class, 'publisher_id');
-}
+    public function sertifikasis(){
+        return $this->hasMany(sertifikasi::class, 'publisher_id');
+    }
+
+    public function journals(){
+        return $this->hasMany(Journal::class, 'publisher_id');
+    }
     /**
      * The attributes that should be hidden for serialization.
      *
