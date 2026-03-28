@@ -104,11 +104,60 @@ class JournalController extends Controller
             'journal_author'=>'required|string',
             'publish_date'=>'required|date',
             'doi'=>'required|string',
-            // Continue here
+            'journal_abstract'=>'required|string',
+            'journal_file'=>'nullable|mimes:pdf|max:5000',
         ]);
+
+        if($validator->fails()){
+            return response()->json($validator->errors(), 422);
+        }
+        try{
+            DB::beginTransaction();
+            if($request->title !== $data->title){
+                $data->slug = Str::slug($request->title);
+            }
+            $data->title = $request->title;
+            $data->journal_author = $request->journal_author;
+            $data->publish_date = $request->publish_date;
+            $data->doi = $request->doi;
+            $data->journal_abstract = $request->journal_abstract;
+            if($request->hasFile('journal_file')){
+                Storage::disk('public')->delete('journal/files/' . $data->journal_file);
+                $filePath = $request->file('journal_file')->store('journal/files/', 'public');
+                $data->journal_file = basename($filePath);
+            }
+            $data->save();
+            DB::commit();
+            return response()->json([
+                'message'=>'Journal updated'
+            ], 200);
+        } catch(\Exception $e){
+            DB::rollBack();
+            return response()->json([
+                'message'=>'Oops! Terjadi kesalahan',
+                'error'=>$e->getMessage(),
+            ], 500);
+        }
     }
 
     public function destroy($slug){
         $this->authorize('manage jurnal');
+        $data = Journal::where('slug', $slug)
+            ->firstOrFail();
+        try{
+            DB::beginTransaction();
+            Storage::disk('public')->delete('journal/files/' . $data->journal_file);
+            $data->delete();
+            DB::commit();
+            return response()->json([
+                'message'=>'Journal berhasil dihapus!',
+            ], 200);
+        } catch(\Exception $e){
+            DB::rollBack();
+            return response()->json([
+                'message'=>'Oops! Terjadi kesalahan',
+                'error'=>$e->getMessage(),
+            ], 500);
+        }
     }
 }

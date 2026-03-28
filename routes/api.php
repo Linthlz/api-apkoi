@@ -5,6 +5,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\KurikulumController;
 use App\Http\Controllers\NewsController;
 use App\Http\Controllers\SertifikasiController;
+use App\Http\Controllers\JournalController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -35,6 +36,7 @@ Route::middleware(['auth:sanctum', 'permission:manage news'])
    ->delete('/delete-news', [NewsController::class, 'destroy']);
 Route::get('/news',[NewsController::class,'index']);
 Route::get('/news/{slug}',[NewsController::class, 'show']);
+
    //Sertifikasi
 Route::middleware(['auth:sanctum', 'permission:manage certificate'])
    ->post('/create-sertifikasi', [SertifikasiController::class, 'store']);
@@ -53,4 +55,11 @@ Route::middleware(['auth:sanctum', 'permission:manage kurikulum'])
 Route::middleware(['auth:sanctum', 'permission:manage kurikulum'])
    ->delete('/delete-kurikulum/{slug}', [KurikulumController::class, 'destroy']);
 Route::get('/kurikulum',[KurikulumController::class,'index']);
-Route::get('/kurikulum/{slug}',[KurikulumController::class, 'show']);   
+Route::get('/kurikulum/{slug}',[KurikulumController::class, 'show']);
+
+// Journal
+Route::middleware(['auth:sanctum', 'permission:manage jurnal'])->post('/create-journal', [JournalController::class, 'store']);
+Route::middleware(['auth:sanctum', 'permission:manage jurnal'])->patch('/update-journal/{slug}', [JournalController::class, 'update']);
+Route::middleware(['auth:sanctum', 'permission:manage jurnal'])->delete('/delete-journal/{slug}', [JournalController::class, 'destroy']);
+Route::get('/journal', [JournalController::class, 'index']);
+Route::get('/journal/{slug}', [JournalController::class, 'show']);
