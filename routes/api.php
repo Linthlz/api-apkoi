@@ -6,6 +6,7 @@ use App\Http\Controllers\KurikulumController;
 use App\Http\Controllers\NewsController;
 use App\Http\Controllers\SertifikasiController;
 use App\Http\Controllers\JournalController;
+use App\Http\Controllers\UPT\ProfileController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -21,12 +22,24 @@ Route::get('/', function(){
 //Auth
 Route::middleware('throttle:5,1')
    ->post('login', [AuthController::class, 'login']);
+Route::middleware('throttle:5,1')
+   ->post('logout', [AuthController::class, 'logout']);
+
 
 //Admin Route
 Route::middleware(['auth:sanctum', 'permission:manage users'])
-   ->post('/createuser', [ManageUserController::class, 'store']);
+   ->post('/users', [ManageUserController::class, 'store']);
+Route::middleware(['auth:sanctum', 'permission:manage users'])
+   ->get('/users',[ManageUserController::class, 'UserList']);
+Route::middleware(['auth:sanctum', 'permission:manage users'])
+   ->patch('/users/{public_id}', [ManageUserController::class, 'ModifyUser']);
+Route::middleware(['auth:sanctum', 'permission:manage users'])
+   ->delete('/users/{public_id}',[ManageUserController::class, 'destroy']);
 
-
+   // PRofile Route
+Route::middleware(['auth:sanctum', 'permission:manage profile'])
+   ->patch('/update-profile', [ProfileController::class, 'modifyProfile']);
+   
    //News
 Route::middleware(['auth:sanctum', 'permission:manage news'])
    ->post('/create-news', [NewsController::class, 'store']);
