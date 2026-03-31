@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 
 class ProfileController extends Controller
 {
@@ -29,6 +30,13 @@ class ProfileController extends Controller
     ]);
     if(isset($validated['password'])){
             $validated['password'] = Hash::make($validated['password']);
+        }
+         if ($request->hasFile('profile_avatar')) {
+            if ($user->profile_avatar) {
+                Storage::disk('public')->delete('user/' . $user->profile_avatar);
+            }
+            $imagePath = $request->file('profile_avatar')->store('user', 'public');
+            $validated['profile_avatar'] = basename($imagePath);
         }
         $user->update($validated);
         return response()->json([

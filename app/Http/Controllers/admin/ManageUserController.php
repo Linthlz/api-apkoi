@@ -32,6 +32,7 @@ class ManageUserController extends Controller
             'password'=> Hash::make($validated['password']),
             'public_id'=> $uuid,
         ]);
+        // $user->sendEmailVerificationNotification();
         $user->assignRole($role);
         return response()->json([
             '{+}' => ucfirst($role). 'Created',

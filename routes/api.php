@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\admin\ManageUserController;
+use App\Http\Controllers\Auth\EmailController as AuthEmailController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\KurikulumController;
 use App\Http\Controllers\NewsController;
@@ -24,6 +25,21 @@ Route::middleware('throttle:5,1')
    ->post('login', [AuthController::class, 'login']);
 Route::middleware('throttle:5,1')
    ->post('logout', [AuthController::class, 'logout']);
+Route::middleware(['auth:sanctum', 'throttle:6,1'])
+   ->post('/email/verification-notification', function (Request $request) {
+      if ($request->user()->hasVerifiedEmail()) {
+         return response()->json([
+            '{+}' => 'Email already verified!',
+         ], 200);
+      }
+      $request->user()->sendEmailVerificationNotification();
+      return response()->json([
+         '{+}' => 'Verification sent'
+      ], 200);
+   });
+Route::get('/email/verify/{id}/{hash}', [AuthEmailController::class, 'verify'])
+   ->middleware(['signed'])
+   ->name('verification.verify');
 
 
 //Admin Route
