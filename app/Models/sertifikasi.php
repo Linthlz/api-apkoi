@@ -2,9 +2,10 @@
 
 namespace App\Models;
 
+use App\Policies\SertifikasiPolicy;
 use Illuminate\Database\Eloquent\Model;
 
-class sertifikasi extends Model
+class Sertifikasi extends Model
 {
    protected $fillable = [
     'public_id',
@@ -23,4 +24,7 @@ public function publisher()
 {
     return $this->belongsTo(User::class, 'publisher_id');
 }
+protected $policies = [
+    Sertifikasi::class => SertifikasiPolicy::class,
+];
 }

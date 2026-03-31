@@ -2,9 +2,10 @@
 
 namespace App\Models;
 
+use App\Policies\KurikulumPolicy;
 use Illuminate\Database\Eloquent\Model;
 
-class kurikulum extends Model
+class Kurikulum extends Model
 {
    protected $fillable = [
     'public_id',
@@ -21,4 +22,7 @@ public function publisher()
 {
     return $this->belongsTo(User::class, 'publisher_id');
 }
+protected $policies = [
+    Kurikulum::class => KurikulumPolicy::class,
+];
 }

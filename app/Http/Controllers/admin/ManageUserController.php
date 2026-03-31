@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
@@ -47,30 +49,49 @@ class ManageUserController extends Controller
         ],200);
     }
 
-    public function ModifyUser(Request $request,$public_id ){
-        $user = $request->user();
-        $this->authorize('manaage users');
-        $modifyUser = User::findOrFail($public_id);
-        if(isset($validated['password'])){
-            $validated['password']= Hash::make($validated['password']);
-        }
+    public function modifyUser(Request $request, $public_id){
+        $this->authorize('manage users');
+        $modifyUser = User::where('public_id', $public_id)->firstOrFail();
         $validated = $request->validate([
             'name' => ['sometimes', 'string'],
-            'email' => ['sometimes', 'nullable','email', Rule::unique('users','email')->ignore($modifyUser->publlic_id)],
-            'password' => ['sometimes','string', 'min:10'],
+            'email' => ['sometimes','nullable','email', Rule::unique('users', 'email')->ignore($modifyUser->public_id, 'public_id')],
+            'password' => ['sometimes', 'string', 'min:10'],
+            'profile_avatar' => ['sometimes', 'image', 'mimes:jpeg,png,jpg,gif,svg', 'max:2048'],
         ]);
+        if (isset($validated['password'])) {
+            $validated['password'] = Hash::make($validated['password']);
+        }
+        if ($request->hasFile('profile_avatar')) {
+            if ($modifyUser->profile_avatar) {
+                Storage::disk('public')->delete('user/' . $modifyUser->profile_avatar);
+            }
+            $imagePath = $request->file('profile_avatar')->store('user', 'public');
+            $validated['profile_avatar'] = basename($imagePath);
+        }
         $modifyUser->update($validated);
         return response()->json([
-            'Updated'=> $modifyUser
-        ],200);
+            'updated' => $modifyUser
+        ], 200);
     }
 
     public function destroy(Request $request, $public_id){
         $user = $request->user();
         $this->authorize('manage users');
-        $destroyUser = User::findOrFail($public_id)->delete();
-        return response()->json([
-            "User Deleted" => $destroyUser
-        ],200);
+        $destroyUser = User::where('public_id', $public_id)->firstOrFail();
+         try {
+            DB::beginTransaction();
+            Storage::disk('public')->delete('user/' . $destroyUser->profile_avatar);
+            $destroyUser->delete();
+            DB::commit();
+            return response()->json([
+                'message' => 'User Deleted'
+            ], 200);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => 'Error',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 }

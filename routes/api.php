@@ -44,9 +44,9 @@ Route::middleware(['auth:sanctum', 'permission:manage profile'])
 Route::middleware(['auth:sanctum', 'permission:manage news'])
    ->post('/create-news', [NewsController::class, 'store']);
 Route::middleware(['auth:sanctum', 'permission:manage news'])
-   ->patch('/update-news', [NewsController::class, 'update']);
+   ->patch('/update-news/{slug}', [NewsController::class, 'update']);
 Route::middleware(['auth:sanctum', 'permission:manage news'])
-   ->delete('/delete-news', [NewsController::class, 'destroy']);
+   ->delete('/delete-news/{slug}', [NewsController::class, 'destroy']);
 Route::get('/news',[NewsController::class,'index']);
 Route::get('/news/{slug}',[NewsController::class, 'show']);
 
@@ -55,8 +55,7 @@ Route::middleware(['auth:sanctum', 'permission:manage certificate'])
    ->post('/create-sertifikasi', [SertifikasiController::class, 'store']);
 Route::middleware(['auth:sanctum', 'permission:manage certificate'])
    ->patch('/create-sertifikasi', [SertifikasiController::class, 'update']);
-Route::middleware(['auth:sanctum', 'permission:manage certificate'])
-   ->delete('/create-sertifikasi', [SertifikasiController::class, 'destroy']);
+Route::delete('/create-sertifikasi', [SertifikasiController::class, 'destroy']);
 Route::get('/sertifikasi',[SertifikasiController::class,'index']);
 Route::get('/sertifikasi/{slug}',[SertifikasiController::class, 'show']);
 

@@ -99,8 +99,8 @@ class KurikulumController extends Controller
     //Note, Use slug not id
     public function update(Request $request, $slug)
     {
-        $this->authorize('manage kurikulum');
         $data = Kurikulum::where('slug', $slug)->firstOrFail();
+        $this->authorize('update', $data);
         $validator = Validator::make($request->all(), [
             'title' => 'required|string|unique:kurikulums,title,' . $data->id,
             'tanggal' => 'required|date',
@@ -143,8 +143,8 @@ class KurikulumController extends Controller
 
     public function destroy($slug)
     {
-        $this->authorize('manage kurikulum');
         $data = Kurikulum::where('slug', $slug)->firstOrFail();
+        $this->authorize('delete', $data);
         try {
             DB::beginTransaction();
             Storage::disk('public')->delete('kurikulum/images/' . $data->kurikulum_image);

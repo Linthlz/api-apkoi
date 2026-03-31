@@ -35,7 +35,6 @@ class NewsController extends Controller
 
         $validator =Validator::make($request->all(),[
             'title' => 'required|string|unique:news,title',
-            'category' => 'required|string',
             'tanggal' => 'required|string',
             'content' => 'required|string',
             'news_image' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
@@ -55,7 +54,6 @@ class NewsController extends Controller
         $news = News::create([
             'public_id' => $uuid,
             'title' => $request->title,
-            'category' => $request->category,
             'tanggal' => $request->tanggal,
             'news_image' => basename($imagePath),
             'content' => $request->content,
@@ -109,27 +107,22 @@ class NewsController extends Controller
     }
     public function update(Request $request, $slug)
     {
-        $this->authorize('manage news');
         $data = News::where('slug', $slug)->firstOrFail();
-
+        $this->authorize('update', $data);
         $validator = Validator::make($request->all(), [
             'title' => 'required|string|unique:news,title,' . $data->id,
             'tanggal' => 'required|date',
             'content' => 'required|string',
             'news_image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
         ]);
-
         if ($validator->fails()) {
             return response()->json($validator->errors(), 422);
         }
-
         try {
             DB::beginTransaction();
-
             if ($request->title !== $data->title) {
                 $data->slug = Str::slug($request->title);
             }
-
             $data->title = $request->title;
             $data->tanggal = $request->tanggal;
             $data->content = $request->content;
@@ -139,18 +132,14 @@ class NewsController extends Controller
                 $imagePath = $request->file('news_image')->store('news', 'public');
                 $data->news_image = basename($imagePath);
             }
-
             $data->save();
             DB::commit();
-
             return response()->json([
                 'message' => 'News Updated',
                 'data' => $data
             ], 200);
-
         } catch (\Exception $e) {
             DB::rollBack();
-
             return response()->json([
                 'message' => 'Error',
                 'error' => $e->getMessage()
@@ -159,8 +148,8 @@ class NewsController extends Controller
     }
     public function destroy($slug)
     {
-        $this->authorize('manage news');
         $data = News::where('slug', $slug)->firstOrFail();
+         $this->authorize('delete', $data);
         try {
             DB::beginTransaction();
             Storage::disk('public')->delete('news/' . $data->news_image);
