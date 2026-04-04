@@ -105,47 +105,57 @@ class NewsController extends Controller
             'data' => $data
         ], 200);
     }
-    public function update(Request $request, $slug)
-    {
-        $data = News::where('slug', $slug)->firstOrFail();
-        $this->authorize('update', $data);
-        $validator = Validator::make($request->all(), [
-            'title' => 'required|string|unique:news,title,' . $data->id,
-            'tanggal' => 'required|date',
-            'content' => 'required|string',
-            'news_image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
-        ]);
-        if ($validator->fails()) {
-            return response()->json($validator->errors(), 422);
-        }
-        try {
-            DB::beginTransaction();
-            if ($request->title !== $data->title) {
-                $data->slug = Str::slug($request->title);
-            }
-            $data->title = $request->title;
-            $data->tanggal = $request->tanggal;
-            $data->content = $request->content;
-
-            if ($request->hasFile('news_image')) {
-                Storage::disk('public')->delete('news/' . $data->news_image);
-                $imagePath = $request->file('news_image')->store('news', 'public');
-                $data->news_image = basename($imagePath);
-            }
-            $data->save();
-            DB::commit();
-            return response()->json([
-                'message' => 'News Updated',
-                'data' => $data
-            ], 200);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json([
-                'message' => 'Error',
-                'error' => $e->getMessage()
-            ], 500);
-        }
+    public function update(Request $request, $slug){
+    $data = News::where('slug', $slug)->firstOrFail();
+    $this->authorize('update', $data);
+    $validator = Validator::make($request->all(), [
+        'title' => 'sometimes|required|string|unique:news,title,' . $data->id,
+        'tanggal' => 'sometimes|required|date',
+        'content' => 'sometimes|required|string',
+        'news_image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+    ]);
+    if ($validator->fails()) {
+        return response()->json($validator->errors(), 422);
     }
+    try {
+        DB::beginTransaction();
+        if ($request->has('title')) {
+            $title = $request->input('title');
+
+            if ($title !== $data->title) {
+                $data->slug = Str::slug($title);
+            }
+            $data->title = $title;
+        }
+        if ($request->has('tanggal')) {
+            $data->tanggal = $request->input('tanggal');
+        }
+        if ($request->has('content')) {
+            $data->content = $request->input('content');
+        }
+        if ($request->hasFile('news_image')) {
+            if ($data->news_image) {
+                Storage::disk('public')->delete('news/' . $data->news_image);
+            }
+            $imagePath = $request->file('news_image')->store('news', 'public');
+            $data->news_image = basename($imagePath);
+        }
+        $data->save();
+        DB::commit();
+        return response()->json([
+            'message' => 'News Updated',
+            'data' => $data
+        ], 200);
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+
+        return response()->json([
+            'message' => 'Error',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
     public function destroy($slug)
     {
         $data = News::where('slug', $slug)->firstOrFail();
