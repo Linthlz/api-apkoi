@@ -107,7 +107,7 @@ class NewsController extends Controller
     }
     public function update(Request $request, $slug){
     $data = News::where('slug', $slug)->firstOrFail();
-    $this->authorize('update', $data, 'manage news');
+    $this->authorize('manage news');
     $validator = Validator::make($request->all(), [
         'title' => 'sometimes|required|string|unique:news,title,' . $data->id,
         'tanggal' => 'sometimes|required|date',
@@ -159,7 +159,7 @@ class NewsController extends Controller
     public function destroy($slug)
     {
         $data = News::where('slug', $slug)->firstOrFail();
-         $this->authorize('delete', $data);
+         $this->authorize('manage news');
         try {
             DB::beginTransaction();
             Storage::disk('public')->delete('news/' . $data->news_image);
