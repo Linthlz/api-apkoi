@@ -105,34 +105,53 @@ class NewsController extends Controller
             'data' => $data
         ], 200);
     }
-    public function update(Request $request, $slug){
+public function update(Request $request, $slug){
     $data = News::where('slug', $slug)->firstOrFail();
     $this->authorize('manage news');
+
     $validator = Validator::make($request->all(), [
         'title' => 'sometimes|required|string|unique:news,title,' . $data->id,
         'tanggal' => 'sometimes|required|date',
         'content' => 'sometimes|required|string',
         'news_image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
     ]);
+
     if ($validator->fails()) {
         return response()->json($validator->errors(), 422);
     }
     try {
         DB::beginTransaction();
+
         if ($request->has('title')) {
             $title = $request->input('title');
 
             if ($title !== $data->title) {
-                $data->slug = Str::slug($title);
+                $baseSlug = Str::slug($title);
+                $newSlug = $baseSlug;
+                $count = 1;
+
+                while (
+                   News::where('slug', $newSlug)
+                        ->where('id', '!=', $data->id)
+                        ->exists()
+                ) {
+                    $newSlug = $baseSlug . '-' . $count++;
+                }
+
+                $data->slug = $newSlug;
             }
+
             $data->title = $title;
         }
+
         if ($request->has('tanggal')) {
             $data->tanggal = $request->input('tanggal');
         }
+
         if ($request->has('content')) {
             $data->content = $request->input('content');
         }
+
         if ($request->hasFile('news_image')) {
             if ($data->news_image) {
                 Storage::disk('public')->delete('news/' . $data->news_image);
@@ -140,8 +159,10 @@ class NewsController extends Controller
             $imagePath = $request->file('news_image')->store('news', 'public');
             $data->news_image = basename($imagePath);
         }
+
         $data->save();
         DB::commit();
+
         return response()->json([
             'message' => 'News Updated',
             'data' => $data
