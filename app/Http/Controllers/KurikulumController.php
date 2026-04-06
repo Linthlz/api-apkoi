@@ -100,7 +100,7 @@ class KurikulumController extends Controller
     public function update(Request $request, $slug)
     {
         $data = Kurikulum::where('slug', $slug)->firstOrFail();
-        $this->authorize('update', $data);
+        $this->authorize('update', $data, 'manage kurikulum');
         $validator = Validator::make($request->all(), [
             'title' => 'required|string|unique:kurikulums,title,' . $data->id,
             'tanggal' => 'required|date',
@@ -144,7 +144,7 @@ class KurikulumController extends Controller
     public function destroy($slug)
     {
         $data = Kurikulum::where('slug', $slug)->firstOrFail();
-        $this->authorize('delete', $data);
+        $this->authorize('delete', $data, 'manage kurikulum');
         try {
             DB::beginTransaction();
             Storage::disk('public')->delete('kurikulum/images/' . $data->kurikulum_image);

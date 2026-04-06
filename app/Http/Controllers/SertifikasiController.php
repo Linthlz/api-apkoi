@@ -100,7 +100,7 @@ class SertifikasiController extends Controller
     public function update(Request $request, $slug)
     {
         $data = Sertifikasi::where('slug', $slug)->firstOrFail();
-        $this->authorize('update', $data);
+        $this->authorize('update', $data, 'manage certificate');
         $validator = Validator::make($request->all(), [
             'title' => 'required|string|unique:sertifikasis,title,' . $data->id,
             'sertificate_owner' => 'required|string',
@@ -150,7 +150,7 @@ class SertifikasiController extends Controller
     public function destroy($slug)
     {
         $data = Sertifikasi::where('slug', $slug)->firstOrFail();
-        $this->authorize('delete', $data);
+        $this->authorize('delete', $data, 'manage sertifikasi');
         try {
             DB::beginTransaction();
 

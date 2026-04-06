@@ -107,7 +107,7 @@ class NewsController extends Controller
     }
     public function update(Request $request, $slug){
     $data = News::where('slug', $slug)->firstOrFail();
-    $this->authorize('update', $data);
+    $this->authorize('update', $data, 'manage news');
     $validator = Validator::make($request->all(), [
         'title' => 'sometimes|required|string|unique:news,title,' . $data->id,
         'tanggal' => 'sometimes|required|date',
