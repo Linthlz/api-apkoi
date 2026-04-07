@@ -177,7 +177,7 @@ public function ViewKurikulumFile($filename)
 }
 public function ViewKurikulumFileDeployed($filename)
 {
-    $filePath = storage_path('app/public/kurikulum/files/' . $filename);
+    $filePath = storage_path('public/storage/kurikulum/files/' . $filename);
 
     if (!file_exists($filePath)) {
         abort(404);
