@@ -173,4 +173,17 @@ class SertifikasiController extends Controller
             ], 500);
         }
     }
+    public function ViewSertifikasiFile($filename)
+{
+    $filePath = storage_path('/app/public/sertifikasi/files/' . $filename);
+
+    if (!file_exists($filePath)) {
+        abort(404);
+    }
+
+    return response()->file($filePath, [
+        'Content-Type' => 'application/pdf',
+        'Content-Disposition' => 'inline; filename="'.$filename.'"'
+    ]);
+}
 }

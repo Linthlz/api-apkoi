@@ -162,4 +162,17 @@ class KurikulumController extends Controller
             ], 500);
         }
     }
+public function ViewKurikulumFile($filename)
+{
+    $filePath = storage_path('/app/public/kurikulum/files/' . $filename);
+
+    if (!file_exists($filePath)) {
+        abort(404);
+    }
+
+    return response()->file($filePath, [
+        'Content-Type' => 'application/pdf',
+        'Content-Disposition' => 'inline; filename="'.$filename.'"'
+    ]);
+}
 }

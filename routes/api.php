@@ -74,6 +74,8 @@ Route::middleware(['auth:sanctum', 'permission:manage certificate'])
 Route::delete('/create-sertifikasi', [SertifikasiController::class, 'destroy']);
 Route::get('/sertifikasi',[SertifikasiController::class,'index']);
 Route::get('/sertifikasi/{slug}',[SertifikasiController::class, 'show']);
+Route::get('sertifikasi/file/{filename}',[SertifikasiController::class, 'ViewSertifikasiFile']);
+
 
    //Kurikulum
 Route::middleware(['auth:sanctum', 'permission:manage kurikulum'])
@@ -84,7 +86,7 @@ Route::middleware(['auth:sanctum', 'permission:manage kurikulum'])
    ->delete('/delete-kurikulum/{slug}', [KurikulumController::class, 'destroy']);
 Route::get('/kurikulum',[KurikulumController::class,'index']);
 Route::get('/kurikulum/{slug}',[KurikulumController::class, 'show']);
-
+Route::get('kurikulum/file/{filename}',[KurikulumController::class, 'ViewKurikulumFile']);
 // Journal
 Route::middleware(['auth:sanctum', 'permission:manage jurnal'])->post('/create-journal', [JournalController::class, 'store']);
 Route::middleware(['auth:sanctum', 'permission:manage jurnal'])->patch('/update-journal/{slug}', [JournalController::class, 'update']);
