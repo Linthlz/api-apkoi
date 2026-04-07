@@ -175,4 +175,17 @@ public function ViewKurikulumFile($filename)
         'Content-Disposition' => 'inline; filename="'.$filename.'"'
     ]);
 }
+public function ViewKurikulumFileDeployed($filename)
+{
+    $filePath = storage_path('/kurikulum/files/' . $filename);
+
+    if (!file_exists($filePath)) {
+        abort(404);
+    }
+
+    return response()->file($filePath, [
+        'Content-Type' => 'application/pdf',
+        'Content-Disposition' => 'inline; filename="'.$filename.'"'
+    ]);
+}
 }
