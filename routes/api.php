@@ -86,7 +86,7 @@ Route::middleware(['auth:sanctum', 'permission:manage kurikulum'])
    ->delete('/delete-kurikulum/{slug}', [KurikulumController::class, 'destroy']);
 Route::get('/kurikulum',[KurikulumController::class,'index']);
 Route::get('/kurikulum/{slug}',[KurikulumController::class, 'show']);
-Route::get('kurikulum/file/{filename}',[KurikulumController::class, 'ViewKurikulumFiles']);
+Route::get('kurikulum/file/{filename}',[KurikulumController::class, 'ViewKurikulumDeployed']);
 // Journal
 Route::middleware(['auth:sanctum', 'permission:manage jurnal'])->post('/create-journal', [JournalController::class, 'store']);
 Route::middleware(['auth:sanctum', 'permission:manage jurnal'])->patch('/update-journal/{slug}', [JournalController::class, 'update']);
