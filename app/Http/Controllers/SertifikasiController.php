@@ -150,7 +150,7 @@ class SertifikasiController extends Controller
     public function destroy($slug)
     {
         $data = Sertifikasi::where('slug', $slug)->firstOrFail();
-        $this->authorize('manage sertifikasi');
+        $this->authorize('manage certificate');
         try {
             DB::beginTransaction();
 

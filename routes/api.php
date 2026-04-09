@@ -71,7 +71,8 @@ Route::middleware(['auth:sanctum', 'permission:manage certificate'])
    ->post('/create-sertifikasi', [SertifikasiController::class, 'store']);
 Route::middleware(['auth:sanctum', 'permission:manage certificate'])
    ->patch('/update-sertifikasi/{slug}', [SertifikasiController::class, 'update']);
-Route::delete('/delete-sertifikasi/{slug}', [SertifikasiController::class, 'destroy']);
+Route::middleware(['auth:sanctum', 'permission:manage certificate'])
+   ->delete('/delete-sertifikasi/{slug}', [SertifikasiController::class, 'destroy']);
 Route::get('/sertifikasi',[SertifikasiController::class,'index']);
 Route::get('/sertifikasi/{slug}',[SertifikasiController::class, 'show']);
 Route::get('sertifikasi/file/{filename}',[SertifikasiController::class, 'ViewSertifikasiFile']);
