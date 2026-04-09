@@ -70,8 +70,8 @@ Route::get('/news/{slug}',[NewsController::class, 'show']);
 Route::middleware(['auth:sanctum', 'permission:manage certificate'])
    ->post('/create-sertifikasi', [SertifikasiController::class, 'store']);
 Route::middleware(['auth:sanctum', 'permission:manage certificate'])
-   ->patch('/create-sertifikasi', [SertifikasiController::class, 'update']);
-Route::delete('/create-sertifikasi', [SertifikasiController::class, 'destroy']);
+   ->patch('/update-sertifikasi', [SertifikasiController::class, 'update']);
+Route::delete('/delete-sertifikasi', [SertifikasiController::class, 'destroy']);
 Route::get('/sertifikasi',[SertifikasiController::class,'index']);
 Route::get('/sertifikasi/{slug}',[SertifikasiController::class, 'show']);
 Route::get('sertifikasi/file/{filename}',[SertifikasiController::class, 'ViewSertifikasiFile']);
