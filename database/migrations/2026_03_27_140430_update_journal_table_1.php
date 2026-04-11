@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('journals', function(Blueprint $table){
-            $table->string('published_at');
+            $table->timestamp('published_at')->nullable();
         });
     }
 
