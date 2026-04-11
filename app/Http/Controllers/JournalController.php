@@ -122,11 +122,11 @@ class JournalController extends Controller
             $data->slug = Str::slug($request->title);
         }
 
-        $data->title = $request->title;
-        $data->journal_author = $request->journal_author;
-        $data->publish_date = $request->publish_date;
-        $data->doi = $request->doi;
-        $data->journal_abstract = $request->journal_abstract;
+        $data->title = $request->title ?? $data->title;
+        $data->journal_author = $request->journal_author ?? $data->journal_author;
+        $data->publish_date = $request->publish_date ?? $data->publish_date;
+        $data->doi = $request->doi ?? $data->doi;
+        $data->journal_abstract = $request->journal_abstract ?? $data->journal_abstract;
 
         // handle file update
         if ($request->hasFile('journal_file')) {
