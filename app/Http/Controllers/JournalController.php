@@ -102,11 +102,11 @@ class JournalController extends Controller
     $data = Journal::where('slug', $slug)->firstOrFail();
 
     $validator = Validator::make($request->all(), [
-        'title' => 'required|string|unique:journals,title,' . $data->id,
-        'journal_author' => 'required|string',
-        'publish_date' => 'required|date',
+        'title' => 'sometimes|string|unique:journals,title,' . $data->id,
+        'journal_author' => 'sometimes|string',
+        'publish_date' => 'sometimes|date',
         'doi' => 'nullable|string',
-        'journal_abstract' => 'required|string',
+        'journal_abstract' => 'sometimes|string',
         'journal_file' => 'nullable|mimes:pdf|max:5000',
     ]);
 
