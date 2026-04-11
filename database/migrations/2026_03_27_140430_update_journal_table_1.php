@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('journal', function(Blueprint $table){
+        Schema::table('journals', function(Blueprint $table){
             $table->string('published_at');
         });
     }
