@@ -95,62 +95,19 @@ class JournalController extends Controller
         ], 200);
     }
 
-    // public function update(Request $request, $slug){
-    //     $this->authorize('manage jurnal');
-    //     $data = Journal::where('slug', $slug)
-    //     ->firstOrFail();
-    //     $validator = Validator::make($request->all(), [
-    //         'title' => 'sometimes|string|unique:journals,title,' . $data->id,
-    //         'journal_author' => 'sometimes|string',
-    //         'publish_date' => 'sometimes|date',
-    //         'doi' => 'sometimes|string',
-    //         'journal_abstract' => 'sometimes|string',
-    //         'journal_file' => 'nullable|mimes:pdf|max:5000',
-    //     ]);
-
-    //     if($validator->fails()){
-    //         return response()->json($validator->errors(), 422);
-    //     }
-    //     try{
-    //         DB::beginTransaction();
-    //         if($request->title !== $data->title){
-    //             $data->slug = Str::slug($request->title);
-    //         }
-    //         $data->title = $request->title;
-    //         $data->journal_author = $request->journal_author;
-    //         $data->publish_date = $request->publish_date;
-    //         $data->doi = $request->doi;
-    //         $data->journal_abstract = $request->journal_abstract;
-    //         if($request->hasFile('journal_file')){
-    //             Storage::disk('public')->delete('journal/files/' . $data->journal_file);
-    //             $filePath = $request->file('journal_file')->store('journal/files/', 'public');
-    //             $data->journal_file = basename($filePath);
-    //         }
-    //         $data->save();
-    //         DB::commit();
-    //         return response()->json([
-    //             'message'=>'Journal updated'
-    //         ], 200);
-    //     } catch(\Exception $e){
-    //         DB::rollBack();
-    //         return response()->json([
-    //             'message'=>'Oops! Terjadi kesalahan',
-    //             'error'=>$e->getMessage(),
-    //         ], 500);
-    //     }
-    // }
-    public function update(Request $request, $slug){
+    public function update(Request $request, $slug)
+{
     $this->authorize('manage jurnal');
 
     $data = Journal::where('slug', $slug)->firstOrFail();
 
     $validator = Validator::make($request->all(), [
-        'title'            => 'sometimes|string|unique:journals,title,' . $data->id,
-        'journal_author'   => 'sometimes|string',
-        'publish_date'     => 'sometimes|date',
-        'doi'              => 'sometimes|string',
-        'journal_abstract' => 'sometimes|string',
-        'journal_file'     => 'nullable|mimes:pdf|max:5000',
+        'title' => 'required|string|unique:journals,title,' . $data->id,
+        'journal_author' => 'required|string',
+        'publish_date' => 'required|date',
+        'doi' => 'nullable|string',
+        'journal_abstract' => 'required|string',
+        'journal_file' => 'nullable|mimes:pdf|max:5000',
     ]);
 
     if ($validator->fails()) {
@@ -160,43 +117,47 @@ class JournalController extends Controller
     try {
         DB::beginTransaction();
 
-        if ($request->filled('title')) {
-            if ($request->title !== $data->title) {
-                $newSlug = Str::slug($request->title);
-                $count = Journal::where('slug', 'LIKE', $newSlug . '%')
-                    ->where('id', '!=', $data->id)
-                    ->count();
-                $data->slug = $count > 0 ? $newSlug . '-' . ($count + 1) : $newSlug;
-            }
-            $data->title = $request->title;
+        // update slug jika title berubah
+        if ($request->title !== $data->title) {
+            $data->slug = Str::slug($request->title);
         }
 
-        if ($request->filled('journal_author'))   $data->journal_author   = $request->journal_author;
-        if ($request->filled('publish_date'))      $data->publish_date     = $request->publish_date;
-        if ($request->filled('doi'))               $data->doi              = $request->doi;
-        if ($request->filled('journal_abstract'))  $data->journal_abstract = $request->journal_abstract;
+        $data->title = $request->title;
+        $data->journal_author = $request->journal_author;
+        $data->publish_date = $request->publish_date;
+        $data->doi = $request->doi;
+        $data->journal_abstract = $request->journal_abstract;
 
+        // handle file update
         if ($request->hasFile('journal_file')) {
             if ($data->journal_file) {
                 Storage::disk('public')->delete('journal/files/' . $data->journal_file);
             }
-            $filePath = $request->file('journal_file')->store('journal/files/', 'public');
+
+            $filePath = $request->file('journal_file')
+                ->store('journal/files', 'public');
+
             $data->journal_file = basename($filePath);
         }
 
         $data->save();
+
         DB::commit();
 
-        return response()->json(['message' => 'Journal updated'], 200);
+        return response()->json([
+            'message' => 'Journal updated'
+        ], 200);
 
     } catch (\Exception $e) {
         DB::rollBack();
+
         return response()->json([
             'message' => 'Oops! Terjadi kesalahan',
-            'error'   => $e->getMessage(),
+            'error' => $e->getMessage(),
         ], 500);
     }
-    }   
+}
+
     public function destroy($slug){
         $this->authorize('manage jurnal');
         $data = Journal::where('slug', $slug)
