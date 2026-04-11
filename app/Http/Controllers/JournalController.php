@@ -18,7 +18,7 @@ class JournalController extends Controller
     public function store(Request $request){
         $this->authorize('manage jurnal');
         $validator = Validator::make($request->all(), [
-            'title'=>'required|string|unique:journal,title',
+            'title'=>'required|string|unique:journals,title',
             'journal_author'=>'required|string',
             'publish_date'=>'required',
             'doi'=>'required|string',
@@ -100,7 +100,7 @@ class JournalController extends Controller
         $data = Journal::where('slug', $slug)
         ->firstOrFail();
         $validator = Validator::make($request->all(), [
-            'title'=>'required|string|unique:journal,title' . $data->id,
+            'title'=>'required|string|unique:journals,title' . $data->id,
             'journal_author'=>'required|string',
             'publish_date'=>'required|date',
             'doi'=>'required|string',
