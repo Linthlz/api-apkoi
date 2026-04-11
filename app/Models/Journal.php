@@ -16,6 +16,7 @@ class Journal extends Model
         'journal_file',
         'slug',
         'publisher_id',
+        'published_at'
     ];
 
     public function publisher(){
