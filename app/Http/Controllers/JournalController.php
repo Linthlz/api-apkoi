@@ -23,7 +23,6 @@ class JournalController extends Controller
             'publish_date'=>'required',
             'doi'=>'required|string',
             'journal_abstract'=>'required|string',
-            'journal_file'=>'required|mimes:pdf|max:5000',
         ]);
 
         if($validator->fails()){
@@ -35,8 +34,8 @@ class JournalController extends Controller
             $uuid = Str::uuid()->toString();
             $slug = Str::slug($request->title);
 
-            // Upload image
-            $filePath = $request->file('journal_file')->store('journal/files', 'public');
+            // Upload file
+            // $filePath = $request->file('journal_file')->store('journal/files', 'public');
 
             $journal = Journal::create([
                 'public_id'=>$uuid,
@@ -45,7 +44,6 @@ class JournalController extends Controller
                 'publish_date'=>$request->publish_date,
                 'doi'=>$request->doi,
                 'journal_abstract'=>$request->journal_abstract,
-                'journal_file'=>basename($filePath),
                 'slug'=>$slug,
                 'publisher_id'=>Auth::user()->id,
                 'published_at'=>now(),
@@ -57,7 +55,7 @@ class JournalController extends Controller
             ], 201);
         } catch(\Exception $e){
             return response()->json([
-                'message'=>'Oops! Terjadi kesalahan💀',
+                'message'=>'Terjadi kesalahan!',
                 'error'=>$e->getMessage(),
             ], 500);
         }
@@ -106,7 +104,6 @@ class JournalController extends Controller
             'publish_date' => 'sometimes|required|date',
             'doi' => 'sometimes|nullable|string',
             'journal_abstract' => 'sometimes|required|string',
-            'journal_file' => 'nullable|mimes:pdf|max:5000',
         ]);
 
         if ($validator->fails()) {
@@ -154,16 +151,16 @@ class JournalController extends Controller
                 $data->journal_abstract = $request->input('journal_abstract');
             }
 
-            if ($request->hasFile('journal_file')) {
-                if ($data->journal_file) {
-                    Storage::disk('public')->delete('journal/files/' . $data->journal_file);
-                }
+            // if ($request->hasFile('journal_file')) {
+            //     if ($data->journal_file) {
+            //         Storage::disk('public')->delete('journal/files/' . $data->journal_file);
+            //     }
 
-                $filePath = $request->file('journal_file')
-                    ->store('journal/files', 'public');
+            //     $filePath = $request->file('journal_file')
+            //         ->store('journal/files', 'public');
 
-                $data->journal_file = basename($filePath);
-            }
+            //     $data->journal_file = basename($filePath);
+            // }
 
             $data->save();
             DB::commit();
@@ -189,7 +186,6 @@ class JournalController extends Controller
             ->firstOrFail();
         try{
             DB::beginTransaction();
-            Storage::disk('public')->delete('journal/files/' . $data->journal_file);
             $data->delete();
             DB::commit();
             return response()->json([

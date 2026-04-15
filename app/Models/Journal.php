@@ -13,7 +13,6 @@ class Journal extends Model
         'publish_date',
         'doi',
         'journal_abstract',
-        'journal_file',
         'slug',
         'publisher_id',
         'published_at'
