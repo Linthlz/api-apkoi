@@ -25,6 +25,7 @@ class RolePermissionSeeder extends Seeder
             'manage profile',
             'manage certificate',
             'manage jurnal',
+            'manage agenda',
 
             //SuperAdmin
             'manage users',
@@ -52,6 +53,7 @@ class RolePermissionSeeder extends Seeder
             'manage profile',
             'manage certificate',
             'manage jurnal',
+            'manage agenda',
         ]);
 
     }

@@ -11,6 +11,7 @@ class Sertifikasi extends Model
     'public_id',
     'title',
     'sertificate_owner',
+    'institution',
     'sertificate_code',
     'sertificate_image',
     'sertificate_file',

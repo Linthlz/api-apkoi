@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\HandlesListing;
 use App\Models\Sertifikasi;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
@@ -14,135 +14,152 @@ use Illuminate\Support\Str;
 
 class SertifikasiController extends Controller
 {
-    use AuthorizesRequests;
+    use AuthorizesRequests, HandlesListing;
+
+    // "title" = nama program/kegiatan sertifikat (boleh sama untuk banyak penerima)
+    private function rules(bool $partial = false): array
+    {
+        $required = $partial ? 'sometimes|required' : 'required';
+
+        return [
+            'title' => "$required|string|max:255",
+            'sertificate_owner' => "$required|string|max:255",
+            'sertificate_code' => "$required|string|max:255",
+            'tanggal' => "$required|date",
+            'institution' => 'nullable|string|max:255',
+            'sertificate_image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'sertificate_file' => ($partial ? 'nullable' : 'required') . '|mimes:pdf|max:4096',
+        ];
+    }
+
+    // Terima juga nama field lama "certificate_*" yang dulu dipakai endpoint update
+    private function normalizeFileFields(Request $request): void
+    {
+        foreach (['image', 'file'] as $kind) {
+            if (!$request->hasFile("sertificate_$kind") && $request->hasFile("certificate_$kind")) {
+                $request->files->set("sertificate_$kind", $request->file("certificate_$kind"));
+            }
+        }
+    }
+
+    private function withUrls(Sertifikasi $item): Sertifikasi
+    {
+        $item->sertificate_image_url = $item->sertificate_image ? asset('storage/sertifikasi/images/' . $item->sertificate_image) : null;
+        $item->sertificate_file_url = $item->sertificate_file ? asset('storage/sertifikasi/files/' . $item->sertificate_file) : null;
+
+        return $item;
+    }
 
     public function store(Request $request)
     {
         $this->authorize('manage certificate');
+        $this->normalizeFileFields($request);
 
-        $validator =Validator::make($request->all(),[
-            'title' => 'required|string|unique:sertifikasis,title',
-            'sertificate_owner' => 'required|string',
-            'sertificate_code' => 'required|string',
-            'tanggal' => 'required|string',
-            // 'sertificate_image' => 'required|image|mimes:jpg,jpeg,png|max:2048',
-            'sertificate_file' => 'required|mimes:pdf|max:4096',
-            // 'published_at' => 'required|date'
-        ]);
-        if($validator->fails()){
-            return response()->json($validator->errors(),422);
+        $validator = Validator::make($request->all(), $this->rules());
+        if ($validator->fails()) {
+            return response()->json($validator->errors(), 422);
         }
-        //Public ID And Slug
+
         try {
-        $uuid = Str::uuid()->toString();
-        $slug = Str::slug($request->title);
+            $imagePath = $request->hasFile('sertificate_image')
+                ? $request->file('sertificate_image')->store('sertifikasi/images', 'public')
+                : null;
+            $filePath = $request->file('sertificate_file')->store('sertifikasi/files', 'public');
 
-        // upload image
-        // $imagePath = $request->file('certificate_image')->store('sertifikasi/images', 'public');
-        $filePath = $request->file('sertificate_file')->store('sertifikasi/files', 'public');
+            $sertifikasi = Sertifikasi::create([
+                'public_id' => Str::uuid()->toString(),
+                'title' => $request->title,
+                'sertificate_owner' => $request->sertificate_owner,
+                'sertificate_code' => $request->sertificate_code,
+                'institution' => $request->institution,
+                'sertificate_image' => $imagePath ? basename($imagePath) : null,
+                'sertificate_file' => basename($filePath),
+                'slug' => $this->uniqueSlug(Sertifikasi::class, $request->sertificate_code . ' ' . $request->sertificate_owner),
+                'publisher_id' => Auth::user()->id,
+                'tanggal' => $request->tanggal,
+                'published_at' => now(),
+            ]);
 
-        $sertifikasi = Sertifikasi::create([
-            'public_id' => $uuid,
-            'title' => $request->title,
-            'sertificate_owner' => $request->sertificate_owner,
-            'sertificate_code' => $request->sertificate_code,
-            // 'sertificate_image' => basename($imagePath),
-            'sertificate_file' => basename($filePath),
-            'slug' => $slug,
-            'publisher_id' => Auth::user()->id,
-            'tanggal' => $request->tanggal,
-            'published_at' => now(),
-        ]);
-
-        return response()->json([
-            'message' => 'Certificate berhasil dibuat!',
-            'data' => $sertifikasi
-        ], 201);
-        // Error Catch
+            return response()->json([
+                'message' => 'Certificate berhasil dibuat!',
+                'data' => $this->withUrls($sertifikasi),
+            ], 201);
         } catch (\Exception $e) {
-        return response()->json([
-            'message' => 'Terjadi kesalahan',
-            'error' => $e->getMessage()
-        ], 500);
+            return response()->json([
+                'message' => 'Terjadi kesalahan',
+                'error' => $e->getMessage(),
+            ], 500);
         }
     }
-    public function index(){
-        // $this->authorize('manage sertifikasi');
-         $data = Sertifikasi::whereNotNull('published_at')
-        ->where('published_at', '<=', now())
-        ->latest()
-        ->paginate(5);
 
-        return response()->json([
-            'message' => 'News',
-            'data' => $data->items(),
-            'pagination' => [
-                'current_page' => $data->currentPage(),
-                'last_page' => $data->lastPage(),
-                'per_page' => $data->perPage(),
-                'total' => $data->total(),
-            ]
-        ], 200);
+    public function index(Request $request)
+    {
+        $data = Sertifikasi::whereNotNull('published_at')
+            ->where('published_at', '<=', now())
+            ->latest()
+            ->paginate($this->perPage($request));
+
+        return $this->paginated('Sertifikasi', $data, fn ($item) => $this->withUrls($item));
     }
+
     public function show($slug)
     {
         $data = Sertifikasi::where('slug', $slug)
             ->whereNotNull('published_at')
             ->where('published_at', '<=', now())
             ->firstOrFail();
-            $data->sertificate_image_url = asset('storage/sertifikasi/images/' . $data->sertificate_image);
-            $data->sertificate_file_url = asset('storage/sertifikasi/files/' . $data->sertificate_file);
+
         return response()->json([
             'message' => 'Certificate Fetched',
-            'data' => $data
+            'data' => $this->withUrls($data),
         ], 200);
     }
+
     public function update(Request $request, $slug)
     {
         $data = Sertifikasi::where('slug', $slug)->firstOrFail();
         $this->authorize('manage certificate');
-        $validator = Validator::make($request->all(), [
-            'title' => 'required|string|unique:sertifikasis,title,' . $data->id,
-            'sertificate_owner' => 'required|string',
-            'sertificate_code' => 'required|string',
-            'tanggal' => 'required|date',
-            'certificate_image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
-            'certificate_file' => 'nullable|mimes:pdf|max:4096',
-        ]);
+        $this->normalizeFileFields($request);
+
+        $validator = Validator::make($request->all(), $this->rules(true));
         if ($validator->fails()) {
             return response()->json($validator->errors(), 422);
         }
+
         try {
             DB::beginTransaction();
-            if ($request->title !== $data->title) {
-                $data->slug = Str::slug($request->title);
+
+            $data->fill($request->only(['title', 'sertificate_owner', 'sertificate_code', 'tanggal', 'institution']));
+
+            if ($request->hasFile('sertificate_image')) {
+                if ($data->sertificate_image) {
+                    Storage::disk('public')->delete('sertifikasi/images/' . $data->sertificate_image);
+                }
+                $data->sertificate_image = basename($request->file('sertificate_image')->store('sertifikasi/images', 'public'));
             }
-            $data->title = $request->title;
-            $data->sertificate_owner = $request->sertificate_owner;
-            $data->sertificate_code = $request->sertificate_code;
-            $data->tanggal = $request->tanggal;
-            if ($request->hasFile('certificate_image')) {
-                Storage::disk('public')->delete('sertifikasi/images/' . $data->sertificate_image);
-                $imagePath = $request->file('certificate_image')->store('sertifikasi/images', 'public');
-                $data->sertificate_image = basename($imagePath);
+            if ($request->hasFile('sertificate_file')) {
+                if ($data->sertificate_file) {
+                    Storage::disk('public')->delete('sertifikasi/files/' . $data->sertificate_file);
+                }
+                $data->sertificate_file = basename($request->file('sertificate_file')->store('sertifikasi/files', 'public'));
             }
-            if ($request->hasFile('certificate_file')) {
-                Storage::disk('public')->delete('sertifikasi/files/' . $data->sertificate_file);
-                $filePath = $request->file('certificate_file')->store('sertifikasi/files', 'public');
-                $data->sertificate_file = basename($filePath);
+            if ($data->isDirty(['sertificate_code', 'sertificate_owner'])) {
+                $data->slug = $this->uniqueSlug(Sertifikasi::class, $data->sertificate_code . ' ' . $data->sertificate_owner, $data->id);
             }
+
             $data->save();
             DB::commit();
+
             return response()->json([
                 'message' => 'Certificate Updated',
-                'data' => $data
+                'data' => $this->withUrls($data),
             ], 200);
         } catch (\Exception $e) {
             DB::rollBack();
 
             return response()->json([
                 'message' => 'Error',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -151,39 +168,45 @@ class SertifikasiController extends Controller
     {
         $data = Sertifikasi::where('slug', $slug)->firstOrFail();
         $this->authorize('manage certificate');
+
         try {
             DB::beginTransaction();
 
-            Storage::disk('public')->delete('sertifikasi/images/' . $data->sertificate_image);
-            Storage::disk('public')->delete('sertifikasi/files/' . $data->sertificate_file);
+            if ($data->sertificate_image) {
+                Storage::disk('public')->delete('sertifikasi/images/' . $data->sertificate_image);
+            }
+            if ($data->sertificate_file) {
+                Storage::disk('public')->delete('sertifikasi/files/' . $data->sertificate_file);
+            }
 
             $data->delete();
             DB::commit();
 
             return response()->json([
-                'message' => 'Certificate Deleted'
+                'message' => 'Certificate Deleted',
             ], 200);
-
         } catch (\Exception $e) {
             DB::rollBack();
 
             return response()->json([
                 'message' => 'Error',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
+
     public function ViewSertifikasiFile($filename)
-{
-    $filePath = storage_path('/app/public/sertifikasi/files/' . $filename);
+    {
+        $filename = basename($filename);
+        $filePath = storage_path('app/public/sertifikasi/files/' . $filename);
 
-    if (!file_exists($filePath)) {
-        abort(404);
+        if (!file_exists($filePath)) {
+            abort(404);
+        }
+
+        return response()->file($filePath, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="' . $filename . '"',
+        ]);
     }
-
-    return response()->file($filePath, [
-        'Content-Type' => 'application/pdf',
-        'Content-Disposition' => 'inline; filename="'.$filename.'"'
-    ]);
-}
 }

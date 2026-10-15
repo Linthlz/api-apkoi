@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\admin\ManageUserController;
+use App\Http\Controllers\AgendaController;
 use App\Http\Controllers\Auth\EmailController as AuthEmailController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\KurikulumController;
@@ -23,7 +24,7 @@ Route::get('/', function(){
 //Auth
 Route::middleware('throttle:5,1')
    ->post('login', [AuthController::class, 'login']);
-Route::middleware('throttle:5,1')
+Route::middleware(['auth:sanctum', 'throttle:5,1'])
    ->post('logout', [AuthController::class, 'logout']);
 Route::middleware(['auth:sanctum', 'throttle:6,1'])
    ->post('/email/verification-notification', function (Request $request) {
@@ -94,3 +95,10 @@ Route::middleware(['auth:sanctum', 'permission:manage jurnal'])->patch('/update-
 Route::middleware(['auth:sanctum', 'permission:manage jurnal'])->delete('/delete-journal/{slug}', [JournalController::class, 'destroy']);
 Route::get('/journal', [JournalController::class, 'index']);
 Route::get('/journal/{slug}', [JournalController::class, 'show']);
+
+// Agenda
+Route::middleware(['auth:sanctum', 'permission:manage agenda'])->post('/create-agenda', [AgendaController::class, 'store']);
+Route::middleware(['auth:sanctum', 'permission:manage agenda'])->patch('/update-agenda/{slug}', [AgendaController::class, 'update']);
+Route::middleware(['auth:sanctum', 'permission:manage agenda'])->delete('/delete-agenda/{slug}', [AgendaController::class, 'destroy']);
+Route::get('/agenda', [AgendaController::class, 'index']);
+Route::get('/agenda/{slug}', [AgendaController::class, 'show']);

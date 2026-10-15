@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\HandlesListing;
 use App\Models\News;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
@@ -28,7 +29,7 @@ class NewsController extends Controller
             // 'manage certificate',
             // 'manage jurnal',
 
-    use AuthorizesRequests;
+    use AuthorizesRequests, HandlesListing;
     public function store(Request $request)
     {
         $this->authorize('manage news');
@@ -46,7 +47,7 @@ class NewsController extends Controller
         //Public ID And Slug
         try{    
         $uuid = Str::uuid()->toString();
-        $slug = Str::slug($request->title);
+        $slug = $this->uniqueSlug(News::class, $request->title);
 
         // upload image
         $imagePath = $request->file('news_image')->store('news', 'public');
@@ -76,22 +77,17 @@ class NewsController extends Controller
     }
 
 
-    public function index(){
-         $data = News::whereNotNull('published_at')
-        ->where('published_at', '<=', now())
-        ->latest()
-        ->paginate(5);
+    public function index(Request $request){
+        $data = News::whereNotNull('published_at')
+            ->where('published_at', '<=', now())
+            ->latest()
+            ->paginate($this->perPage($request));
 
-        return response()->json([
-            'message' => 'News',
-            'data' => $data->items(),
-            'pagination' => [
-                'current_page' => $data->currentPage(),
-                'last_page' => $data->lastPage(),
-                'per_page' => $data->perPage(),
-                'total' => $data->total(),
-            ]
-        ], 200);
+        // Sertakan URL gambar lengkap agar frontend tidak perlu menyusunnya sendiri
+        return $this->paginated('News', $data, function ($item) {
+            $item->news_image_url = $item->news_image ? asset('storage/news/' . $item->news_image) : null;
+            return $item;
+        });
     }
     public function show($slug)
     {

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\HandlesListing;
 use App\Models\Kurikulum;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
@@ -14,7 +15,7 @@ use Illuminate\Support\Str;
 
 class KurikulumController extends Controller
 {
-    use AuthorizesRequests;
+    use AuthorizesRequests, HandlesListing;
 
     public function store(Request $request)
     {
@@ -33,7 +34,7 @@ class KurikulumController extends Controller
         try {
         //Public ID And Slug
         $uuid = Str::uuid()->toString();
-        $slug = Str::slug($request->title);
+        $slug = $this->uniqueSlug(Kurikulum::class, $request->title);
 
         // upload image
         // $imagePath = $request->file('kurikulum_image')->store('kurikulum/images', 'public');
@@ -64,22 +65,16 @@ class KurikulumController extends Controller
         }
     }
 
-     public function index(){
-         $data = Kurikulum::whereNotNull('published_at')
-        ->where('published_at', '<=', now())
-        ->latest()
-        ->paginate(5);
+    public function index(Request $request){
+        $data = Kurikulum::whereNotNull('published_at')
+            ->where('published_at', '<=', now())
+            ->latest()
+            ->paginate($this->perPage($request));
 
-        return response()->json([
-            'message' => 'Kurikulum',
-            'data' => $data->items(),
-            'pagination' => [
-                'current_page' => $data->currentPage(),
-                'last_page' => $data->lastPage(),
-                'per_page' => $data->perPage(),
-                'total' => $data->total(),
-            ]
-        ], 200);
+        return $this->paginated('Kurikulum', $data, function ($item) {
+            $item->kurikulum_file_url = $item->kurikulum_file ? asset('storage/kurikulum/files/' . $item->kurikulum_file) : null;
+            return $item;
+        });
     }
     public function show($slug)
     {
@@ -113,7 +108,7 @@ class KurikulumController extends Controller
         try {
             DB::beginTransaction();
             if ($request->title !== $data->title) {
-                $data->slug = Str::slug($request->title);
+                $data->slug = $this->uniqueSlug(Kurikulum::class, $request->title, $data->id);
             }
             $data->title = $request->title;
             $data->tanggal = $request->tanggal;
@@ -129,8 +124,10 @@ class KurikulumController extends Controller
             }
             $data->save();
             DB::commit();
+            $data->kurikulum_file_url = $data->kurikulum_file ? asset('storage/kurikulum/files/' . $data->kurikulum_file) : null;
             return response()->json([
-                'message' => 'Kurikulum updated'
+                'message' => 'Kurikulum updated',
+                'data' => $data,
             ], 200);
         } catch (\Exception $e) {
             DB::rollBack();

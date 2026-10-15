@@ -11,9 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('journal', function(Blueprint $table){
-            $table->dropColumn('journal_file');
-        });
+        // Nama tabel yang benar adalah "journals"; dijaga agar aman bila kolom sudah terhapus
+        if (Schema::hasTable('journals') && Schema::hasColumn('journals', 'journal_file')) {
+            Schema::table('journals', function(Blueprint $table){
+                $table->dropColumn('journal_file');
+            });
+        }
     }
 
     /**
